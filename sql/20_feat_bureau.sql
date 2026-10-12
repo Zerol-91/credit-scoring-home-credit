@@ -38,7 +38,9 @@ SELECT
 
     COUNT(*)                                            AS bureau_cnt,
     COUNT(*) FILTER (WHERE b.CREDIT_ACTIVE = 'Active')  AS bureau_active_cnt,
-    COALESCE(SUM(b.AMT_CREDIT_SUM_DEBT)
+    -- Negative debt (overpayment or data error) is clipped to 0 per credit,
+    -- so it cannot offset real debt on the client's other credits
+    COALESCE(SUM(GREATEST(b.AMT_CREDIT_SUM_DEBT, 0))
              FILTER (WHERE b.CREDIT_ACTIVE = 'Active'), 0) AS bureau_active_debt,
 
     MAX(CASE WHEN b.CREDIT_DAY_OVERDUE > 0 OR b.AMT_CREDIT_SUM_OVERDUE > 0
