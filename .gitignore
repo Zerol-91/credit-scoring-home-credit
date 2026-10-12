@@ -223,3 +223,8 @@ __marimo__/
 data/
 *.duckdb
 *.duckdb.wal
+
+# Local assistant config
+CLAUDE.md
+DECISIONS.md
+.claude/
