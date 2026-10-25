@@ -48,6 +48,18 @@ def test_approve_all_equals_direct_sum():
     assert full["profit"] == pytest.approx(curve["profit"].iloc[-1])
 
 
+def test_profit_can_be_recomputed_from_amounts_for_any_assumptions():
+    rng = np.random.default_rng(5)
+    pd_ = rng.uniform(0, 0.4, 2000)
+    target = rng.binomial(1, pd_)
+    ead = rng.uniform(10_000, 500_000, 2000)
+    curve = profit_curve(pd_, target, ead, margin=0.10, lgd=0.65)
+    assert (0.10 * curve["ead_good"] - 0.65 * curve["ead_bad"]).to_numpy() == pytest.approx(curve["profit"].to_numpy())
+    other = profit_curve(pd_, target, ead, margin=0.07, lgd=0.80)
+    assert (0.07 * curve["ead_good"] - 0.80 * curve["ead_bad"]).to_numpy() == pytest.approx(other["profit"].to_numpy())
+    assert (curve["n_bad"] / curve["n_approved"]).to_numpy() == pytest.approx(curve["bad_rate"].to_numpy())
+
+
 def test_without_losses_approving_everyone_is_optimal():
     rng = np.random.default_rng(4)
     pd_ = rng.uniform(0, 0.5, 500)

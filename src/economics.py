@@ -33,8 +33,10 @@ def profit_curve(
 ) -> pd.DataFrame:
     """Approve clients from the lowest PD up; evaluate the portfolio at approval rates step, 2*step, ..., 1.
 
-    Columns: approval_rate, n_approved, pd_cutoff (highest PD approved), bad_rate of approved,
-    profit (realized, from TARGET) and expected_profit (from PD).
+    Columns: approval_rate, n_approved, n_bad, pd_cutoff (highest PD approved), bad_rate of approved,
+    ead_good / ead_bad (loan amounts of approved repaid / defaulted clients, so profit can be recomputed
+    for any margin and LGD as margin * ead_good - LGD * ead_bad), profit (realized, from TARGET)
+    and expected_profit (from PD).
     """
     pd_ = np.asarray(pd_, dtype=float)
     order = np.argsort(pd_, kind="mergesort")  # stable: ties keep their original order
@@ -43,6 +45,8 @@ def profit_curve(
     ead_sorted = np.asarray(ead, dtype=float)[order]
 
     cum_bad = np.cumsum(target_sorted)
+    cum_ead_bad = np.cumsum(ead_sorted * target_sorted)
+    cum_ead_good = np.cumsum(ead_sorted * (1 - target_sorted))
     cum_profit = np.cumsum(client_profit(target_sorted, ead_sorted, margin, lgd))
     cum_expected = np.cumsum(expected_client_profit(pd_sorted, ead_sorted, margin, lgd))
 
@@ -52,8 +56,11 @@ def profit_curve(
     return pd.DataFrame({
         "approval_rate": k / n,
         "n_approved": k,
+        "n_bad": cum_bad[k - 1].astype(int),
         "pd_cutoff": pd_sorted[k - 1],
         "bad_rate": cum_bad[k - 1] / k,
+        "ead_good": cum_ead_good[k - 1],
+        "ead_bad": cum_ead_bad[k - 1],
         "profit": cum_profit[k - 1],
         "expected_profit": cum_expected[k - 1],
     })
