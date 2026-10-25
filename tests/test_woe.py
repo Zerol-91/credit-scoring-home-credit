@@ -100,6 +100,16 @@ def test_rare_and_unseen_categories():
     assert woe.iloc[2] == 0.0                                        # missing unseen in train -> average
 
 
+def test_tiny_special_bins_get_neutral_woe():
+    # 2 clients with a rare category and 3 with a missing value: too few to estimate risk
+    x = pd.Series(["A"] * 5000 + ["B"] * 4995 + ["rare"] * 2 + [None] * 3, name="cat")
+    y = pd.Series([0] * 4500 + [1] * 500 + [0] * 4600 + [1] * 395 + [1, 1] + [1, 1, 1])
+    b = fit_feature(x, y, min_share=0.05)
+    assert b.table.loc[OTHER, "woe"] == 0.0
+    assert b.table.loc[MISSING, "woe"] == 0.0
+    assert b.table.loc["A", "woe"] != 0.0
+
+
 def test_transformer_fits_on_train_and_applies_to_new_data(monotonic_data):
     x, y = monotonic_data
     X = pd.DataFrame({"x": x, "cat": np.where(x.fillna(0) > 50, "high", "low")})

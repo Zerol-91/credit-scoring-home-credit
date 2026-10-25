@@ -154,6 +154,11 @@ def fit_feature(
         binning = FeatureBinning(x.name, "categorical", categories=shares[shares >= min_share].index.tolist())
 
     binning.table = woe_table(binning.bin_labels(x), y, smoothing)
+    # MISSING and OTHER are not merged like regular bins, so they can be tiny (e.g. 2 clients),
+    # and smoothing then gives them an extreme WoE. Below a tenth of min_share their risk cannot
+    # be estimated: they get WoE 0 (average risk), like a bin unseen in train.
+    tiny_special = binning.table.index.isin([MISSING, OTHER]) & (binning.table["share"] < min_share / 10)
+    binning.table.loc[tiny_special, ["woe", "iv"]] = 0.0
     if binning.kind == "numeric":
         # Numeric bins in natural order, MISSING last
         order = sorted((b for b in binning.table.index if b != MISSING),
