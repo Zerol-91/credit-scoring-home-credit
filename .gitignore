@@ -219,7 +219,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Данные: не публикуем (правила Kaggle и размер)
+# Data: not published (Kaggle rules and file size)
 data/
 *.duckdb
 *.duckdb.wal
