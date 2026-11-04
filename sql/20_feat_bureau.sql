@@ -10,7 +10,7 @@ train_ids AS (
 ),
 
 bureau_train AS (
-    -- Bureau credits of our clients only (decision 2A: drop test-set clients)
+    -- Bureau credits of our clients only (drop test-set clients)
     SELECT *
     FROM bureau
     WHERE SK_ID_CURR IN (SELECT SK_ID_CURR FROM train_ids)

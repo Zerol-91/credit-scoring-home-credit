@@ -5,7 +5,7 @@
 CREATE OR REPLACE TABLE feat_cc AS
 WITH
 cc_train AS (
-    -- Snapshots of our clients only (decision 13: drop test-set clients)
+    -- Snapshots of our clients only (drop test-set clients)
     SELECT *
     FROM credit_card_balance
     WHERE SK_ID_CURR IN (SELECT SK_ID_CURR FROM application_train)

@@ -215,7 +215,7 @@ src/                 woe.py, scorecard.py, modeling.py, economics.py, viz.py
 tests/               pytest unit tests for WoE, scorecard, modeling and economics
 reports/figures/     all charts used here
 reports/powerbi/     aggregated CSV tables and the Power BI report
-docs/                feature list, data model, glossary and progress notes (in Russian)
+docs/                feature list, data model and glossary (in Russian)
 ```
 
 ## How to reproduce

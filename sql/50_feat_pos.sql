@@ -6,7 +6,7 @@
 CREATE OR REPLACE TABLE feat_pos AS
 WITH
 pos_train AS (
-    -- Snapshots of our clients only (decision 13: drop test-set clients)
+    -- Snapshots of our clients only (drop test-set clients)
     SELECT *
     FROM pos_cash_balance
     WHERE SK_ID_CURR IN (SELECT SK_ID_CURR FROM application_train)
