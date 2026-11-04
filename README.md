@@ -5,7 +5,7 @@
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-logreg%20on%20WoE-F7931E?logo=scikitlearn&logoColor=white)
 ![LightGBM](https://img.shields.io/badge/LightGBM-challenger-2A78D6)
 ![Power BI](https://img.shields.io/badge/Power%20BI-dashboard-F2C811?logo=powerbi&logoColor=black)
-![Tests](https://img.shields.io/badge/pytest-23%20passed-2E7D32)
+[![Tests](https://github.com/Zerol-91/credit-scoring-home-credit/actions/workflows/tests.yml/badge.svg)](https://github.com/Zerol-91/credit-scoring-home-credit/actions/workflows/tests.yml)
 
 A bank issues consumer loans and about 8% of clients have payment problems. This project builds a
 credit scorecard on the [Home Credit Default Risk](https://www.kaggle.com/c/home-credit-default-risk) data
@@ -22,8 +22,8 @@ On the held-out test sample, the scorecard with the cut-off chosen on the valida
 | Portfolio profit* | 1,613 M | **1,959 M (+346 M, +21.4%)** |
 | Gini | – | **0.509** |
 
-\* Margin 10% on a repaid loan, loss of 65% (LGD) of a defaulted loan; amounts in the loan currency of the
-dataset. The conclusion holds in all 25 tested margin × LGD scenarios, see [Economics](#4-economics-choosing-the-cut-off).
+\* Margin 10% on a repaid loan, loss of 65% (LGD) of a defaulted loan; amounts in currency units of the
+dataset (the currency is not disclosed). The conclusion holds in all 25 tested margin × LGD scenarios, see [Economics](#4-economics-choosing-the-cut-off).
 
 ![Cut-off simulator](reports/figures/05_simulator.gif)
 
@@ -36,7 +36,7 @@ score cut-off update instantly.*
   70 M on test, which is the **price of explainability**. The scorecard stays the main model because every
   decision can be explained in points per feature.
 - **External credit scores pay off.** Without `EXT_SOURCE_1/2/3` the scorecard loses 0.086 Gini and 120 M
-  of profit, which is about 1,950 per application. A bureau query is worth buying below that price.
+  of profit, which is about 1,950 per application. An external data source is worth paying for below that price.
 - **The decision is robust, the cut-off is not.** The model beats "approve everyone" in all 25
   margin × LGD scenarios (+66 M to +1,006 M), but the optimal approval rate moves from 52% to 93%.
   The cut-off is a business parameter, recomputed when pricing or recovery changes.
@@ -75,7 +75,7 @@ balances) are aggregated to one row per client with DuckDB SQL: [`sql/`](sql/).
 - Every feature table is reconciled with its source (the same total computed two ways).
 - Missing history is kept as `NULL` plus a `has_*_history` flag instead of being filled with zeros.
 
-Data model: [`docs/data_model.md`](docs/data_model.md).
+Data model: [`docs/data_model.md`](docs/data_model.md) (in Russian).
 
 ### 2. Exploratory analysis and hypotheses
 
@@ -99,7 +99,7 @@ everything is significant, so the hypotheses are ranked by effect size, not p-va
 **Scorecard.** Each feature is split into monotonic bins and replaced by its Weight of Evidence. Features are
 selected by Information Value (IV ≥ 0.02) and correlation (≤ 0.7). A logistic regression is refit until every
 coefficient has the expected sign. Scores use a points scale: 600 points = odds 50:1, +20 points double the odds.
-24 features: [`docs/FEATURES.md`](docs/FEATURES.md).
+24 features: [`docs/FEATURES.md`](docs/FEATURES.md) (in Russian).
 
 **LightGBM** as a challenger, with shallow trees (7 leaves, 1,000 clients per leaf) to keep it stable.
 
@@ -137,6 +137,21 @@ where the next client starts to lose money on average.
 
 The cut-off is chosen on the validation sample and then checked on test: it loses less than 1% of profit
 compared with the best cut-off picked in hindsight.
+
+**Strategy table** (main scorecard, validation sample): the cut-off translated into score bands a risk
+manager can act on.
+
+| Score band | Share of clients | Bad rate | Mean PD | Profit, M | Decision |
+|---|---|---|---|---|---|
+| < 520 | 4.8% | 31.3% | 32.3% | −188 | Decline |
+| 520–546 | 17.7% | 16.5% | 16.0% | −147 | Decline |
+| 547–569 | 28.7% | 7.9% | 7.8% | +359 | Approve |
+| 570–599 | 35.5% | 3.3% | 3.5% | +1,026 | Approve |
+| 600+ | 13.3% | 1.6% | 1.4% | +540 | Approve |
+
+The 520–546 band still looks moderate (bad rate 16.5%), but it is above the break-even PD of 13.3%, so it
+loses money. Ideas not tested here: manual review or a smaller limit near the cut-off, a higher limit or a
+lower rate for 600+.
 
 <details>
 <summary>Sensitivity to margin and LGD</summary>
@@ -177,6 +192,20 @@ Two Power BI pages for a risk manager, built on aggregated tables only
 - **Calibration by counts, not money.** PD is calibrated on client counts, while defaulted loans are larger
   than repaid ones with the same PD, so money losses are underestimated.
 
+## Rollout and next steps
+
+- **Champion / challenger test.** Randomly route a share of new applications (e.g. 10–20%) to the score
+  cut-off and keep the rest on the current policy.
+- **Metrics.** Primary: profit per application and bad rate of approved loans. Real defaults take months to
+  mature, so early indicators are tracked first: first payment default and 30+ days past due at 3 months.
+  Guardrails: approval rate and loan volume.
+- **Sample size.** About 8,400 applications per arm detect the profit difference (α = 0.05, power 0.8);
+  the bad-rate drop needs only about 800 approved loans per arm. The constraint is time to maturity, not volume.
+- **Monitoring.** Population stability index (PSI) of the score distribution, calibration by score band,
+  and a cut-off recalculation whenever pricing or recovery assumptions change.
+- **Model.** Recalibrate PD by age group, add reject inference, and replace the assumed margin and LGD with
+  real pricing and recovery data.
+
 ## Repository structure
 
 ```
@@ -206,6 +235,10 @@ docs/                feature list, data model, glossary and progress notes (in R
    sources to `reports/powerbi/`.
 
 All random seeds are fixed (`random_state = 42`).
+
+## Author
+
+**Max Mitkevich** · Telegram [@Zerol_91](https://t.me/Zerol_91) · GitHub [Zerol-91](https://github.com/Zerol-91)
 
 ## License
 
